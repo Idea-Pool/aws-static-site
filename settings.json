@@ -1,0 +1,14 @@
+{
+  "stack": "StaticSiteYourDomainName",
+  "base_domain": "your.domain.name",
+  "domain": "your.domain.name",
+  "add_www": true,
+  "add_cloudfront": true,
+  "owner": "github_account",
+  "repo": "github_repo",
+  "branch": "main",
+  "add_github_credentials": false,
+  "access_token_secret_name": "GitHub",
+  "add_basic_auth": false,
+  "basic_auth_credentials": {}
+}
