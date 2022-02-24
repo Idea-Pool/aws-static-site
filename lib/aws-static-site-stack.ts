@@ -21,18 +21,18 @@ export interface Credentials {
 }
 
 export interface StaticSiteStackProps extends StackProps {
-  gitHubAddCredentials?: boolean;
-  gitHubAccessTokenSecretName: string;
-  gitHubOwner: string;
-  gitHubRepo: string;
-  gitHubBranch?: string;
+  readonly gitHubAddCredentials?: boolean;
+  readonly gitHubAccessTokenSecretName: string;
+  readonly gitHubOwner: string;
+  readonly gitHubRepo: string;
+  readonly gitHubBranch?: string;
   domain: string;
-  baseDomain?: string;
-  addWww?: boolean;
-  addCloudFront?: boolean;
-  addBasicAuth?: boolean;
-  basicAuthCredentials?: Credentials;
-  cloudFrontWafAclArnSSMUri?: string;
+  readonly baseDomain?: string;
+  readonly addWww?: boolean;
+  readonly addCloudFront?: boolean;
+  readonly addBasicAuth?: boolean;
+  readonly basicAuthCredentials?: Credentials;
+  readonly cloudFrontWafAclArnSSMUri?: string;
 }
 
 export class StaticSiteStackPropsError extends TypeError { }
@@ -244,15 +244,17 @@ export class AwsStaticSiteStack extends Stack {
     const role = new iam.Role(this, this.baseId + 'CodeBuildRole', {
       assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
     });
-    role.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      resources: [Arn.format({
-        service: 'cloudfront',
-        resource: `distribution/${this.baseDistribution.distributionId}`,
-        region: "",
-      }, this)],
-      actions: ["cloudfront:CreateInvalidation"],
-    }));
+    if (props.addCloudFront) {
+      role.addToPolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        resources: [Arn.format({
+          service: 'cloudfront',
+          resource: `distribution/${this.baseDistribution.distributionId}`,
+          region: "",
+        }, this)],
+        actions: ["cloudfront:CreateInvalidation"],
+      }));
+    }
 
     // CODEBUILD
 
@@ -275,11 +277,11 @@ export class AwsStaticSiteStack extends Stack {
           'aws/codebuild/standard:5.0'
         ),
       },
-      environmentVariables: {
+      environmentVariables: props.addCloudFront ? {
         DISTRIBUTION_ID: {
           value: this.baseDistribution.distributionId,
         },
-      },
+      } : {},
       buildSpec: codebuild.BuildSpec.fromObjectToYaml({
         version: 0.2,
         phases: {
@@ -303,10 +305,10 @@ export class AwsStaticSiteStack extends Stack {
             ],
           },
           post_build: {
-            commands: [
+            commands: props.addCloudFront ? [
               'echo "Starting post build!"',
               'aws cloudfront create-invalidation --distribution-id "${DISTRIBUTION_ID}" --paths "/*"'
-            ]
+            ] : ['echo "Starting post build!"']
           },
         },
         artifacts: {

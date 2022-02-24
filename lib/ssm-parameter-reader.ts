@@ -7,8 +7,8 @@ import { Construct } from 'constructs';
 import { AwsCustomResource, AwsCustomResourcePolicy, AwsSdkCall, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
 
 interface SSMParameterReaderProps {
-  parameterName: string;
-  region: string;
+  readonly parameterName: string;
+  readonly region: string;
 }
 
 export class SSMParameterReader extends AwsCustomResource {

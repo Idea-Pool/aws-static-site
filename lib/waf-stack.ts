@@ -9,10 +9,10 @@ import * as waf from 'aws-cdk-lib/aws-wafv2';
 import { Construct } from 'constructs';
 
 export interface Rule {
-  name: string;
-  priority: number;
-  overrideAction: string;
-  excludedRules: string[];
+  readonly name: string;
+  readonly priority: number;
+  readonly overrideAction: string;
+  readonly excludedRules: string[];
 }
 
 export const MANAGED_RULES: Rule[] = [
