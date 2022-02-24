@@ -1,7 +1,9 @@
 import * as cdk from 'aws-cdk-lib';
 import * as AwsStaticSite from '../lib/aws-static-site-stack';
-import { AdvancedTemplate, CloudFrontDistribution, S3Bucket, RecordType } from 'aws-cdk-assert';
+import { AdvancedTemplate, CloudFrontDistribution, S3Bucket, RecordType, AdvancedMatcher } from 'aws-cdk-assert';
 import * as route53 from 'aws-cdk-lib/aws-route53';
+import { IAMPolicy, IAMRole } from './iam';
+import { Match } from 'aws-cdk-lib/assertions';
 
 const BASE_DOMAIN = "example.com";
 const SUB_DOMAIN = "sub";
@@ -102,6 +104,39 @@ describe('AwsStaticSiteStack', () => {
         .withAliasToCloudFront(distribution)
         .exists();
     });
+
+    describe("Certificate", () => {
+      let role: IAMRole;
+
+      beforeAll(() => {
+        role = new IAMRole(template)
+          .assumableByLambda()
+          .withManagedRolicy('policy/service-role/AWSLambdaBasicExecutionRole');
+        role.withPartialKey('certificate')
+      })
+
+      test('Certificate requestor role is created', () => {
+        role.exists();
+      });
+
+      test('Policy for certificate requester role is created', () => {
+        new IAMPolicy(template)
+          .usedByRole(role)
+          .withStatement([
+            "acm:RequestCertificate",
+            "acm:DescribeCertificate",
+            "acm:DeleteCertificate",
+            "acm:AddTagsToCertificate"
+          ])
+          // .withStatement('route53:GetChange')
+          // .withStatement('route53:changeResourceRecordSets', AdvancedMatcher.fnJoin(
+          //   Match.arrayWith([
+          //     Match.stringLikeRegexp('hostedzone/TEST'),
+          //   ]),
+          // ))
+          .exists();
+      });
+    })
   });
 
   describe("+ WWW, - CloudFront", () => {
@@ -295,4 +330,8 @@ describe('AwsStaticSiteStack', () => {
         .doesNotExist();
     });
   });
+
+  describe("SSMParameterReader", () => {
+    test.todo("todo");
+  })
 });

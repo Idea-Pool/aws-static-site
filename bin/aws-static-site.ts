@@ -2,7 +2,7 @@
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import { AwsStaticSiteStack, StaticSiteStackProps } from '../lib/aws-static-site-stack';
-import { WafStack } from '../lib/waf-stack';
+import { WafStack, WafStackPurpose } from '../lib/waf-stack';
 import * as settings from '../settings.json';
 
 const app = new cdk.App();
@@ -33,12 +33,13 @@ const mainStackProps: StaticSiteStackProps = {
 if (settings.add_cloudfront) {
   const waf = new WafStack(app, stack + 'Waf', {
     description: `Stack for WAFv2 ACL for ${settings.domain}`,
-    purpose: 'CloudFront',
+    purpose: WafStackPurpose.CLOUDFRONT,
     env: {
       account: process.env.CDK_DEFAULT_ACCOUNT,
       region: 'us-east-1'
     },
   });
+  // @ts-ignore
   mainStackProps.cloudFrontWafAclArnSSMUri = waf.ssmArnUri;
 
   const main = new AwsStaticSiteStack(app, stack + 'Main', mainStackProps);
