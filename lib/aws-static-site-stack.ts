@@ -1,4 +1,4 @@
-import { RemovalPolicy, SecretValue, Stack, StackProps } from 'aws-cdk-lib';
+import { Arn, RemovalPolicy, SecretValue, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as r53 from 'aws-cdk-lib/aws-route53';
@@ -7,6 +7,7 @@ import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { SSMParameterReader } from './ssm-parameter-reader';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -238,6 +239,21 @@ export class AwsStaticSiteStack extends Stack {
       })
     }
 
+    // IAM
+
+    const role = new iam.Role(this, this.baseId + 'CodeBuildRole', {
+      assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
+    });
+    role.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      resources: [Arn.format({
+        service: 'cloudfront',
+        resource: `distribution/${this.baseDistribution.distributionId}`,
+        region: "",
+      }, this)],
+      actions: ["cloudfront:CreateInvalidation"],
+    }));
+
     // CODEBUILD
 
     new codebuild.Project(this, this.baseId + "Build", {
@@ -253,10 +269,16 @@ export class AwsStaticSiteStack extends Stack {
             .andBranchIs(this.gitHubBranch),
         ],
       }),
+      role,
       environment: {
         buildImage: codebuild.LinuxBuildImage.fromCodeBuildImageId(
           'aws/codebuild/standard:5.0'
         ),
+      },
+      environmentVariables: {
+        DISTRIBUTION_ID: {
+          value: this.baseDistribution.distributionId,
+        },
       },
       buildSpec: codebuild.BuildSpec.fromObjectToYaml({
         version: 0.2,
@@ -279,6 +301,12 @@ export class AwsStaticSiteStack extends Stack {
               'npm -v',
               'npm run build-site',
             ],
+          },
+          post_build: {
+            commands: [
+              'echo "Starting post build!"',
+              'aws cloudfront create-invalidation --distribution-id "${DISTRIBUTION_ID}" --paths "/*"'
+            ]
           },
         },
         artifacts: {
