@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as WafStack from '../lib/waf-stack';
 import { AdvancedMatcher, AdvancedTemplate, WafV2WebACL, WebACLScope } from 'aws-cdk-assert';
+import { ParameterType } from 'aws-cdk-lib/aws-ssm';
 
 const REGION = 'eu-central-1';
 
@@ -51,7 +52,7 @@ describe('WafStack', () => {
 
       test('SSM Parameter is added with ACL ARN', () => {
         template.ssmParameter()
-          .of('String')
+          .of(ParameterType.STRING)
           .withValue(AdvancedMatcher.arn(webAcl))
           .exists();
       });
