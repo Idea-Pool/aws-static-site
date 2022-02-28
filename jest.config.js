@@ -15,7 +15,7 @@ module.exports = {
   ],
   coverageDirectory: "./coverage",
   collectCoverageFrom: [
-    "./src/**/*.ts"
+    "./lib/**/*.ts"
   ],
   moduleFileExtensions: [
     "ts",
