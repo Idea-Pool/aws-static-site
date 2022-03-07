@@ -9,10 +9,10 @@ import * as waf from 'aws-cdk-lib/aws-wafv2';
 import { Construct } from 'constructs';
 
 export interface Rule {
-  name: string;
-  priority: number;
-  overrideAction: string;
-  excludedRules: string[];
+  readonly name: string;
+  readonly priority: number;
+  readonly overrideAction: string;
+  readonly excludedRules: string[];
 }
 
 export const MANAGED_RULES: Rule[] = [
@@ -99,8 +99,13 @@ export function makeRules(inputRules: Rule[] = []): waf.CfnRuleGroup.RulePropert
   return rules;
 }
 
+export enum WafStackPurpose {
+  CLOUDFRONT = 'CLOUDFRONT',
+  APIGATEWAY = 'APIGATEWAY',
+}
+
 export interface WafStackProps extends StackProps {
-  purpose: "CloudFront" | "APIGateway"
+  purpose: WafStackPurpose,
 }
 
 export class WafStack extends Stack {
@@ -112,7 +117,7 @@ export class WafStack extends Stack {
     const wafName = id + 'Acl';
     const wafAclCloudFront = new waf.CfnWebACL(this, wafName, {
       defaultAction: { allow: {} },
-      scope: props.purpose == 'CloudFront' ? "CLOUDFRONT" : "REGIONAL",
+      scope: props.purpose == WafStackPurpose.CLOUDFRONT ? "CLOUDFRONT" : "REGIONAL",
       visibilityConfig: {
         cloudWatchMetricsEnabled: true,
         metricName: wafName,

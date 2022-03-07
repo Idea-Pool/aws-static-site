@@ -4,6 +4,9 @@
 !jest.config.js
 *.d.ts
 node_modules
+coverage
+junit.xml
+*.log
 
 # CDK asset staging directory
 .cdk.staging
